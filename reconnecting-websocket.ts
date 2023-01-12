@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 /*!
  * Reconnecting WebSocket
  * by Pedro Ladaria <pedro.ladaria@gmail.com>
@@ -294,7 +296,7 @@ export default class ReconnectingWebSocket {
     ): void {
         if (this._listeners[type]) {
             // @ts-ignore
-            this._listeners[type] = this._listeners[type].filter(l => l !== listener);
+            this._listeners[type] = this._listeners[type].filter((l) => l !== listener);
         }
     }
 
@@ -325,7 +327,7 @@ export default class ReconnectingWebSocket {
     }
 
     private _wait(): Promise<void> {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
             setTimeout(resolve, this._getNextDelay());
         });
     }
@@ -351,7 +353,6 @@ export default class ReconnectingWebSocket {
         if (this._connectLock || !this._shouldReconnect) {
             return;
         }
-        this._connectLock = true;
 
         const {
             maxRetries = DEFAULT.maxRetries,
@@ -364,6 +365,7 @@ export default class ReconnectingWebSocket {
             return;
         }
 
+        this._connectLock = true;
         this._retryCount++;
 
         this._debug('connect', this._retryCount);
@@ -373,9 +375,10 @@ export default class ReconnectingWebSocket {
         }
         this._wait()
             .then(() => this._getNextUrl(this._url))
-            .then(url => {
+            .then((url) => {
                 // close could be called before creating the ws
                 if (this._closeCalled) {
+                    this._connectLock = false;
                     return;
                 }
                 this._debug('connect', {url, protocols: this._protocols});
@@ -402,7 +405,9 @@ export default class ReconnectingWebSocket {
         }
         this._removeListeners();
         try {
-            this._ws.close(code, reason);
+            if (this._ws.readyState === this._ws.OPEN) {
+                this._ws.close(code, reason);
+            }
             this._handleClose(new Events.CloseEvent(code, reason, this));
         } catch (error) {
             // ignore
@@ -437,13 +442,13 @@ export default class ReconnectingWebSocket {
         this._ws!.binaryType = this._binaryType;
 
         // send enqueued messages (messages sent before websocket open event)
-        this._messageQueue.forEach(message => this._ws?.send(message));
+        this._messageQueue.forEach((message) => this._ws?.send(message));
         this._messageQueue = [];
 
         if (this.onopen) {
             this.onopen(event);
         }
-        this._listeners.open.forEach(listener => this._callEventListener(event, listener));
+        this._listeners.open.forEach((listener) => this._callEventListener(event, listener));
     };
 
     private _handleMessage = (event: MessageEvent) => {
@@ -452,7 +457,7 @@ export default class ReconnectingWebSocket {
         if (this.onmessage) {
             this.onmessage(event);
         }
-        this._listeners.message.forEach(listener => this._callEventListener(event, listener));
+        this._listeners.message.forEach((listener) => this._callEventListener(event, listener));
     };
 
     private _handleError = (event: Events.ErrorEvent) => {
@@ -463,7 +468,7 @@ export default class ReconnectingWebSocket {
             this.onerror(event);
         }
         this._debug('exec error listeners');
-        this._listeners.error.forEach(listener => this._callEventListener(event, listener));
+        this._listeners.error.forEach((listener) => this._callEventListener(event, listener));
 
         this._connect();
     };
@@ -479,7 +484,7 @@ export default class ReconnectingWebSocket {
         if (this.onclose) {
             this.onclose(event);
         }
-        this._listeners.close.forEach(listener => this._callEventListener(event, listener));
+        this._listeners.close.forEach((listener) => this._callEventListener(event, listener));
     };
 
     private _removeListeners() {
