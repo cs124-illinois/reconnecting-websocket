@@ -225,11 +225,20 @@ export default class ReconnectingWebSocket {
             this._debug('close enqueued: no ws instance');
             return;
         }
-        if (this._ws.readyState === this.CLOSED) {
+        if (this._ws.readyState === this._ws.CLOSED || this._ws.readyState === this._ws.CLOSING) {
             this._debug('close: already closed');
             return;
         }
-        this._ws.close(code, reason);
+        if (this._ws.readyState === this._ws.OPEN) {
+            this._ws.close(code, reason);
+        } else {
+            const ws = this._ws;
+            ws.addEventListener('open', () => {
+                if (ws.readyState === ws.OPEN) {
+                    ws.close();
+                }
+            });
+        }
     }
 
     /**
@@ -407,8 +416,21 @@ export default class ReconnectingWebSocket {
         try {
             if (this._ws.readyState === this._ws.OPEN) {
                 this._ws.close(code, reason);
+                this._handleClose(new Events.CloseEvent(code, reason, this));
+            } else if (this._ws.readyState === this._ws.CONNECTING) {
+                const ws = this._ws;
+                ws.addEventListener('error', () => {
+                    this._handleClose(new Events.CloseEvent(code, reason, this));
+                });
+                ws.addEventListener('open', () => {
+                    if (ws.readyState === ws.OPEN) {
+                        ws.close();
+                    }
+                    this._handleClose(new Events.CloseEvent(code, reason, this));
+                });
+            } else {
+                this._handleClose(new Events.CloseEvent(code, reason, this));
             }
-            this._handleClose(new Events.CloseEvent(code, reason, this));
         } catch (error) {
             // ignore
         }

@@ -369,11 +369,21 @@ var ReconnectingWebSocket = /** @class */ (function () {
             this._debug('close enqueued: no ws instance');
             return;
         }
-        if (this._ws.readyState === this.CLOSED) {
+        if (this._ws.readyState === this._ws.CLOSED || this._ws.readyState === this._ws.CLOSING) {
             this._debug('close: already closed');
             return;
         }
-        this._ws.close(code, reason);
+        if (this._ws.readyState === this._ws.OPEN) {
+            this._ws.close(code, reason);
+        }
+        else {
+            var ws_1 = this._ws;
+            ws_1.addEventListener('open', function () {
+                if (ws_1.readyState === ws_1.OPEN) {
+                    ws_1.close();
+                }
+            });
+        }
     };
     /**
      * Closes the WebSocket connection or connection attempt and connects again.
@@ -531,6 +541,7 @@ var ReconnectingWebSocket = /** @class */ (function () {
         this._handleError(new ErrorEvent(Error('TIMEOUT'), this));
     };
     ReconnectingWebSocket.prototype._disconnect = function (code, reason) {
+        var _this = this;
         if (code === void 0) { code = 1000; }
         this._clearTimeouts();
         if (!this._ws) {
@@ -540,8 +551,23 @@ var ReconnectingWebSocket = /** @class */ (function () {
         try {
             if (this._ws.readyState === this._ws.OPEN) {
                 this._ws.close(code, reason);
+                this._handleClose(new CloseEvent(code, reason, this));
             }
-            this._handleClose(new CloseEvent(code, reason, this));
+            else if (this._ws.readyState === this._ws.CONNECTING) {
+                var ws_2 = this._ws;
+                ws_2.addEventListener('error', function () {
+                    _this._handleClose(new CloseEvent(code, reason, _this));
+                });
+                ws_2.addEventListener('open', function () {
+                    if (ws_2.readyState === ws_2.OPEN) {
+                        ws_2.close();
+                    }
+                    _this._handleClose(new CloseEvent(code, reason, _this));
+                });
+            }
+            else {
+                this._handleClose(new CloseEvent(code, reason, this));
+            }
         }
         catch (error) {
             // ignore

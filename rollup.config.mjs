@@ -2,7 +2,13 @@ import typescript from 'rollup-plugin-typescript2';
 
 export default {
     input: 'reconnecting-websocket.ts',
-    plugins: [typescript()],
+    plugins: [
+        typescript({
+            tsconfigOverride: {
+                exclude: ['**/__tests__', '**/*.test.ts'],
+            },
+        }),
+    ],
     output: [
         {
             file: 'dist/reconnecting-websocket-iife.js',
