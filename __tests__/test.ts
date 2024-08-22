@@ -6,13 +6,13 @@ const WebSocketServer = WebSocket.Server;
 
 const PORT = 50123;
 const PORT_UNRESPONSIVE = '50124';
-const URL = `ws://localhost:${PORT}`;
+const URL = `ws://localhost:${PORT}/`;
 
 function* _getNewPort() {
     let index = 1;
     while (true) {
         const port = PORT + index;
-        yield {port, url: `ws://localhost:${port}`};
+        yield {port, url: `ws://localhost:${port}/`};
         index = index + 1;
     }
 }
